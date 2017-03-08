@@ -1,15 +1,17 @@
 package ictgc;
 
+import com.google.api.client.googleapis.batch.BatchRequest;
+import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.CalendarList;
 import com.google.api.services.calendar.model.CalendarListEntry;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
-import com.google.api.services.calendar.model.Events;
 import ictgc.domain.CalendarData;
 import ictgc.domain.CalendarEvent;
 import ictgc.google.GoogleApiService;
+import ictgc.google.JsonBatchErrorCallback;
 import ictgc.ical.CalendarReader;
 import java.io.IOException;
 import java.net.URL;
@@ -21,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.ParserException;
 import org.apache.commons.io.IOUtils;
@@ -76,18 +79,24 @@ public class CalendarsSynchronizer {
 
             Calendar googleCalendarService = googleApiService.getCalendarService(userId, userFlow.getUserEmail());
             for (CalendarFlow calendarFlow : userFlow.getCalendarFlows()) {
-                CalendarData calendarData = readICalendar(calendarFlow);
+                try {
+                    CalendarData calendarData = readICalendar(calendarFlow);
 
-                if (calendarData != null) {
-                    mergeCalendarDataToGoogleCalendar(
-                            googleCalendarService, calendarData, calendarFlow.getGoogleCalendarName());
+                    if (calendarData != null) {
+                        mergeCalendarDataToGoogleCalendar(
+                                googleCalendarService, calendarData, calendarFlow.getGoogleCalendarName());
+
+                        calendarFlow.setPreviousData(calendarData);
+                    }
+                }
+                catch (Exception e) {
+                    calendarFlow.setPreviousData(null);
+
+                    log.error("exception while processing calendar flow " + calendarFlow, e);
                 }
             }
 
             log.info("done, {} is synchronized", userId);
-        }
-        catch (IOException | ParserException e) {
-            throw new IllegalStateException(e);
         }
         finally {
             userFlow.finish();
@@ -111,7 +120,6 @@ public class CalendarsSynchronizer {
             log.info("no changes in feed, skipping synchronization");
             return null;
         }
-        calendarFlow.setPreviousData(currentData);
 
         log.info("new data detected, continue synch");
 
@@ -136,9 +144,17 @@ public class CalendarsSynchronizer {
             throws IOException {
 
         List<CalendarEvent> eventsToCreate = calendarData.getEvents();
+        if (eventsToCreate.isEmpty()) {
+            log.info("no events to create, skipping");
+            return;
+        }
+
         log.info("creating {} events in {}", eventsToCreate.size(), googleCalendarId);
 
+        JsonBatchCallback<Event> callback = new JsonBatchErrorCallback<>();
+        BatchRequest googleBatchRequest = googleCalendarService.batch();
         Calendar.Events eventsService = googleCalendarService.events();
+
         for (CalendarEvent calendarEvent : eventsToCreate) {
             Event.ExtendedProperties extendedProperties = new Event.ExtendedProperties();
             HashMap<String, String> privateProperties = new HashMap<>();
@@ -165,22 +181,37 @@ public class CalendarsSynchronizer {
                                 new DateTime(false, calendarEvent.getEndTime().getTime(), null)));
             }
 
-            eventsService.insert(googleCalendarId, googleCalendarEvent).execute();
+            eventsService.insert(googleCalendarId, googleCalendarEvent)
+                    .queue(googleBatchRequest, callback);
         }
 
-        log.info("done");
+        googleBatchRequest.execute();
+
+        log.info("inserted");
     }
 
     private void deleteExistingEvents(Calendar googleCalendarService, String googleCalendarId) throws IOException {
         log.info("deleting events from {}", googleCalendarId);
 
         Calendar.Events eventsService = googleCalendarService.events();
-        Events events = eventsService.list(googleCalendarId).execute();
-        for (Event event : events.getItems()) {
+        List<Event> events = eventsService.list(googleCalendarId).execute().getItems();
+
+        if (events.isEmpty()) {
+            log.info("no events in this calendar, skipping deletion");
+            return;
+        }
+
+        JsonBatchCallback<Void> callback = new JsonBatchErrorCallback<>();
+        BatchRequest batchRequest = googleCalendarService.batch();
+
+        for (Event event : events) {
             if (getICalUuid(event) != null) {
-                eventsService.delete(googleCalendarId, event.getId()).execute();
+                eventsService.delete(googleCalendarId, event.getId())
+                        .queue(batchRequest, callback);
             }
         }
+        
+        batchRequest.execute();
 
         log.info("deleted");
     }
@@ -246,6 +277,7 @@ public class CalendarsSynchronizer {
     }
 
     @Getter
+    @ToString(exclude = "previousData")
     private static class CalendarFlow {
 
         private final String iCalUrl;
