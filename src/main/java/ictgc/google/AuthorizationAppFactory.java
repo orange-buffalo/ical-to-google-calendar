@@ -16,7 +16,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.AbstractHandler;
@@ -44,9 +43,6 @@ public class AuthorizationAppFactory {
         this.redirectUrl = "http://" + host + ":" + port + CALLBACK_PATH;
 
         Server server = new Server(port);
-        for (Connector connector : server.getConnectors()) {
-            connector.setHost(host);
-        }
         server.addHandler(new CallbackHandler());
         try {
             server.start();
