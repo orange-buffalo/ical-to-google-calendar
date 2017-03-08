@@ -1,0 +1,43 @@
+buildscript {
+    ext {
+        springBootVersion = '1.5.1.RELEASE'
+        ical4jVersion = '2.0.0'
+        commonsIoVersion = '2.5'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+apply plugin: 'org.springframework.boot'
+
+jar {
+    baseName = 'ical-to-google-calendar'
+    version = '0.0.1-SNAPSHOT'
+}
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+
+dependencies {
+    compile('org.springframework.boot:spring-boot-starter')
+    compile("org.mnode.ical4j:ical4j:$ical4jVersion")
+    compile("commons-io:commons-io:$commonsIoVersion")
+    compile("org.slf4j:slf4j-api:1.7.24")
+    compile("ch.qos.logback:logback-classic:1.2.1")
+    compile("org.projectlombok:lombok:1.16.14")
+
+    compile 'com.google.api-client:google-api-client:1.22.0'
+    compile 'com.google.oauth-client:google-oauth-client-jetty:1.22.0'
+    compile 'com.google.apis:google-api-services-calendar:v3-rev236-1.22.0'
+
+    testCompile("org.springframework.boot:spring-boot-starter-test")
+    testCompile("junit:junit:4.12")
+}
