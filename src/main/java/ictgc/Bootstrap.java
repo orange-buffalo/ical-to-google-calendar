@@ -1,5 +1,6 @@
 package ictgc;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -16,10 +17,12 @@ public class Bootstrap {
     }
 
     @Bean
-    public TaskExecutor taskExecutor() {
+    @Autowired
+    public TaskExecutor taskExecutor(ApplicationProperties config) {
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
-        threadPoolTaskExecutor.setCorePoolSize(5);
-        threadPoolTaskExecutor.setMaxPoolSize(10);
+        int poolSize = config.getUsers().size();
+        threadPoolTaskExecutor.setCorePoolSize(poolSize);
+        threadPoolTaskExecutor.setMaxPoolSize(poolSize * 2);
         return threadPoolTaskExecutor;
     }
 
