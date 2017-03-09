@@ -76,6 +76,7 @@ public class GoogleApiService {
         GoogleAuthorizationCodeFlow flow =
                 new GoogleAuthorizationCodeFlow.Builder(httpTransport, jsonFactory, clientSecrets, SCOPES)
                         .setCredentialDataStore(credentialDataStore)
+                        .setAccessType("offline")
                         .build();
 
         return authorizationAppFactory.createAuthorizationApp(flow).authorize(userId);
