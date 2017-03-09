@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "ical-to-google-calendar.synchronization-schedule-delay",
+      "type": "java.lang.String",
+      "description": "Delay in ms after previous synchronization and before the next one."
+    }
+  ]
+}

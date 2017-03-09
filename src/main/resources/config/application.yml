@@ -6,9 +6,9 @@ ical-to-google-calendar:
 #    - user-id: "user-id"
 #      i-cal-url: "url-to-feed"
 #      google-calendar-name: "google-calendar-name"
-  authorizationServer:
+  authorization-server:
     port: "9889"
     host: "localhost"
-  authorizationStorageDirectory: "~/.ical-to-google-calendar/storage"
   synchronization-schedule-delay: "300000"
   google-client-secrets-file: "~/.ical-to-google-calendar/client_secret.json"
+  authorization-storage-directory: "~/.ical-to-google-calendar/storage"
