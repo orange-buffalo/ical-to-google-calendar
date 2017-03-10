@@ -31,6 +31,7 @@ public class GoogleApiService {
     private final HttpTransport httpTransport;
     private final JsonFactory jsonFactory;
     private final DataStore<StoredCredential> credentialDataStore;
+    private final GoogleAuthorizationCodeFlow flow;
 
     @Autowired
     public GoogleApiService(AuthorizationAppFactory authorizationAppFactory, ApplicationProperties config)
@@ -43,11 +44,22 @@ public class GoogleApiService {
 
         FileDataStoreFactory dataStoreFactory = new FileDataStoreFactory(config.getAuthorizationStorageDirectory());
         this.credentialDataStore = StoredCredential.getDefaultDataStore(dataStoreFactory);
+
+        String clientSecretJson = org.apache.commons.io.IOUtils.toString(
+                config.getGoogleClientSecretsFile().toURI(), StandardCharsets.UTF_8);
+
+        GoogleClientSecrets clientSecrets =
+                GoogleClientSecrets.load(jsonFactory, new StringReader(clientSecretJson));
+
+        flow = new GoogleAuthorizationCodeFlow.Builder(httpTransport, jsonFactory, clientSecrets, SCOPES)
+                .setCredentialDataStore(credentialDataStore)
+                .setAccessType("offline")
+                .build();
     }
 
     public com.google.api.services.calendar.Calendar getCalendarService(String userId, String userEmail) {
         try {
-            Credential credential = authorize(userId);
+            Credential credential = authorizationAppFactory.createAuthorizationApp(flow).authorize(userId);
             return new com.google.api.services.calendar.Calendar.Builder(httpTransport, jsonFactory, credential)
                     .setApplicationName("ical-to-google-calendar")
                     .build();
@@ -64,22 +76,6 @@ public class GoogleApiService {
         catch (IOException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    private Credential authorize(String userId) throws IOException {
-        String clientSecretJson = org.apache.commons.io.IOUtils.toString(
-                config.getGoogleClientSecretsFile().toURI(), StandardCharsets.UTF_8);
-
-        GoogleClientSecrets clientSecrets =
-                GoogleClientSecrets.load(jsonFactory, new StringReader(clientSecretJson));
-
-        GoogleAuthorizationCodeFlow flow =
-                new GoogleAuthorizationCodeFlow.Builder(httpTransport, jsonFactory, clientSecrets, SCOPES)
-                        .setCredentialDataStore(credentialDataStore)
-                        .setAccessType("offline")
-                        .build();
-
-        return authorizationAppFactory.createAuthorizationApp(flow).authorize(userId);
     }
 
 }
