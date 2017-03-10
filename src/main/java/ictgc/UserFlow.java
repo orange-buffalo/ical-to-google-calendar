@@ -1,7 +1,10 @@
 package ictgc;
 
+import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.batch.BatchRequest;
 import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
+import com.google.api.client.googleapis.json.GoogleJsonError;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.CalendarList;
@@ -76,6 +79,18 @@ class UserFlow {
                         calendarFlow.setPreviousData(calendarData);
                     }
                 }
+                catch (GoogleJsonResponseException jsonException) {
+                    log.error("exception while processing calendar flow " + calendarFlow, jsonException);
+
+                    GoogleJsonError jsonError = jsonException.getDetails();
+                    if (requiresCredentialsReset(jsonError)) {
+                        resetCredentials();
+                    }
+                }
+                catch (TokenResponseException tokenError) {
+                    log.error("exception while processing calendar flow " + calendarFlow, tokenError);
+                    resetCredentials();
+                }
                 catch (Exception e) {
                     calendarFlow.setPreviousData(null);
 
@@ -88,6 +103,16 @@ class UserFlow {
         finally {
             finish();
         }
+    }
+
+    private void resetCredentials() {
+        googleApiService.resetCredentials(userId);
+        log.info("credentials cleared");
+    }
+
+    private boolean requiresCredentialsReset(GoogleJsonError jsonError) {
+        int errorCode = jsonError.getCode();
+        return errorCode == 401;
     }
 
     private CalendarData readICalendar(CalendarFlow calendarFlow) throws IOException, ParserException {
@@ -181,7 +206,11 @@ class UserFlow {
         log.info("deleting events from {}", googleCalendarId);
 
         Calendar.Events eventsService = googleCalendarService.events();
-        List<Event> events = eventsService.list(googleCalendarId).execute().getItems();
+        List<Event> events = eventsService.list(googleCalendarId)
+                .setMaxResults(2500)
+                .setShowDeleted(Boolean.FALSE)
+                .execute()
+                .getItems();
 
         if (events.isEmpty()) {
             log.info("no events in this calendar, skipping deletion");
@@ -200,7 +229,7 @@ class UserFlow {
 
         batchRequest.execute();
 
-        log.info("deleted");
+        log.info("deleted {} events", events.size());
     }
 
     private String getICalUuid(Event event) {
