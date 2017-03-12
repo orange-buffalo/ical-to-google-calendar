@@ -53,7 +53,6 @@ public class CalendarEvent {
      * Otherwise {@link CalendarEvent#startTime} and {@link CalendarEvent#endTime} represent
      * time when event is scheduled to start and to end.
      */
-    @Nonnull
     private boolean allDayEvent;
 
 }

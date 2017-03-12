@@ -29,10 +29,12 @@ public class CalendarReader {
 
     /**
      * Reads the feed and generates {@link CalendarEvents}.
+     *
      * @param calendarBody feed to parse
      * @return events in provided feed
      */
-    public @Nonnull CalendarEvents readCalendar(String calendarBody) {
+    @Nonnull
+    public CalendarEvents readCalendar(String calendarBody) {
         try {
             CalendarBuilder calendarBuilder = new CalendarBuilder();
             Calendar iCalendar = calendarBuilder.build(new StringReader(calendarBody));

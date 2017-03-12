@@ -93,7 +93,11 @@ public class GoogleApiService {
         }
     }
 
-    private @Nonnull GoogleAuthorizationCodeFlow createAuthorizationFlow(ApplicationProperties config)
+    /**
+     * Loads client secret and initiates thread-safe authorization flow with offline access.
+     */
+    @Nonnull
+    private GoogleAuthorizationCodeFlow createAuthorizationFlow(ApplicationProperties config)
             throws IOException {
 
         String clientSecretJson = IOUtils.toString(
@@ -108,11 +112,23 @@ public class GoogleApiService {
                 .build();
     }
 
-    public @Nonnull com.google.api.services.calendar.Calendar getCalendarService(String userId, String userEmail) {
-            Credential credential = authorize(userId, userEmail);
-            return new com.google.api.services.calendar.Calendar.Builder(httpTransport, jsonFactory, credential)
-                    .setApplicationName("ical-to-google-calendar")
-                    .build();
+    /**
+     * Authorizes application for provided user and creates Calendar Service.
+     * If there are no stored credentials, generates a URL to be provided to user in order to navigate
+     * for authorization, prints the URL to log and causes current thread to wait until user navigates to the URL.
+     * As soon as user authorizes the application via provided URL, the thread is woken up and continues execution
+     * by constructing Google Calendar API Service.
+     *
+     * @param userId    ID of user to authorize application by.
+     * @param userEmail email of user to authorize application by.
+     * @return Calendar Service for user.
+     */
+    @Nonnull
+    public com.google.api.services.calendar.Calendar getCalendarService(String userId, String userEmail) {
+        Credential credential = authorize(userId, userEmail);
+        return new com.google.api.services.calendar.Calendar.Builder(httpTransport, jsonFactory, credential)
+                .setApplicationName("ical-to-google-calendar")
+                .build();
     }
 
     public void resetCredentials(String userId) {
@@ -135,7 +151,8 @@ public class GoogleApiService {
      * @param userEmail email of user to get authorization from.
      * @return credentials given by user.
      */
-    private  @Nonnull Credential authorize(String userId, String userEmail) {
+    @Nonnull
+    private Credential authorize(String userId, String userEmail) {
         try {
             Credential credential = authorizationFlow.loadCredential(userId);
             if (credential != null
