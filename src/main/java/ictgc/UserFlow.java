@@ -11,7 +11,7 @@ import com.google.api.services.calendar.model.CalendarList;
 import com.google.api.services.calendar.model.CalendarListEntry;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
-import ictgc.domain.CalendarData;
+import ictgc.domain.CalendarEvents;
 import ictgc.domain.CalendarEvent;
 import ictgc.google.GoogleApiService;
 import ictgc.google.JsonBatchErrorCallback;
@@ -70,13 +70,13 @@ class UserFlow {
             Calendar googleCalendarService = googleApiService.getCalendarService(userId, userEmail);
             for (CalendarFlow calendarFlow : calendarFlows) {
                 try {
-                    CalendarData calendarData = readICalendar(calendarFlow);
+                    CalendarEvents calendarEvents = readICalendar(calendarFlow);
 
-                    if (calendarData != null) {
+                    if (calendarEvents != null) {
                         mergeCalendarDataToGoogleCalendar(
-                                googleCalendarService, calendarData, calendarFlow.getGoogleCalendarName());
+                                googleCalendarService, calendarEvents, calendarFlow.getGoogleCalendarName());
 
-                        calendarFlow.setPreviousData(calendarData);
+                        calendarFlow.setPreviousData(calendarEvents);
                     }
                 }
                 catch (GoogleJsonResponseException jsonException) {
@@ -115,7 +115,7 @@ class UserFlow {
         return errorCode == 401;
     }
 
-    private CalendarData readICalendar(CalendarFlow calendarFlow) throws IOException, ParserException {
+    private CalendarEvents readICalendar(CalendarFlow calendarFlow) throws IOException, ParserException {
         String iCalUrl = calendarFlow.getICalUrl();
         log.info("reading calendar feed: {}", iCalUrl);
 
@@ -123,11 +123,11 @@ class UserFlow {
 
         log.info("feed retrieved");
 
-        CalendarData currentData = calendarReader.parseCalendar(currentCalendarFeedContent);
+        CalendarEvents currentData = calendarReader.readCalendar(currentCalendarFeedContent);
 
         log.info("feed parsed");
 
-        CalendarData previousData = calendarFlow.getPreviousData();
+        CalendarEvents previousData = calendarFlow.getPreviousData();
         if (previousData != null && previousData.equals(currentData)) {
             log.info("no changes in feed, skipping synchronization");
             return null;
@@ -139,7 +139,7 @@ class UserFlow {
     }
 
     private void mergeCalendarDataToGoogleCalendar(
-            Calendar googleCalendarService, CalendarData calendarData, String googleCalendarName) throws IOException {
+            Calendar googleCalendarService, CalendarEvents calendarEvents, String googleCalendarName) throws IOException {
 
         log.info("starting merging calendar data into {}", googleCalendarName);
 
@@ -147,27 +147,26 @@ class UserFlow {
         String googleCalendarId = googleCalendar.getId();
 
         deleteExistingEvents(googleCalendarService, googleCalendarId);
-        createEvents(googleCalendarService, calendarData, googleCalendarId);
+        createEvents(googleCalendarService, calendarEvents, googleCalendarId);
 
         log.info("all done");
     }
 
-    private void createEvents(Calendar googleCalendarService, CalendarData calendarData, String googleCalendarId)
+    private void createEvents(Calendar googleCalendarService, CalendarEvents calendarEvents, String googleCalendarId)
             throws IOException {
 
-        List<CalendarEvent> eventsToCreate = calendarData.getEvents();
-        if (eventsToCreate.isEmpty()) {
+        if (calendarEvents.isEmpty()) {
             log.info("no events to create, skipping");
             return;
         }
 
-        log.info("creating {} events in {}", eventsToCreate.size(), googleCalendarId);
+        log.info("creating {} events in {}", calendarEvents.size(), googleCalendarId);
 
         JsonBatchCallback<Event> callback = new JsonBatchErrorCallback<>();
         BatchRequest googleBatchRequest = googleCalendarService.batch();
         Calendar.Events eventsService = googleCalendarService.events();
 
-        for (CalendarEvent calendarEvent : eventsToCreate) {
+        for (CalendarEvent calendarEvent : calendarEvents) {
             Event.ExtendedProperties extendedProperties = new Event.ExtendedProperties();
             HashMap<String, String> privateProperties = new HashMap<>();
             extendedProperties.setPrivate(privateProperties);

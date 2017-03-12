@@ -1,6 +1,6 @@
 package ictgc;
 
-import ictgc.domain.CalendarData;
+import ictgc.domain.CalendarEvents;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -13,7 +13,7 @@ class CalendarFlow {
     private final String googleCalendarName;
 
     @Setter
-    private CalendarData previousData;
+    private CalendarEvents previousData;
 
     public CalendarFlow(String iCalUrl, String googleCalendarName) {
         this.iCalUrl = iCalUrl;

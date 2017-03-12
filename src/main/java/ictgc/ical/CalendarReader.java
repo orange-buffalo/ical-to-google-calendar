@@ -1,9 +1,13 @@
 package ictgc.ical;
 
-import ictgc.domain.CalendarData;
 import ictgc.domain.CalendarEvent;
+import ictgc.domain.CalendarEvents;
+import ictgc.domain.CalendarSynchronizationException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.ParserException;
@@ -16,33 +20,46 @@ import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.property.DtEnd;
 import org.springframework.stereotype.Service;
 
+/**
+ * Reads the iCalendar feed and produces {@link CalendarEvents}.
+ */
 @Slf4j
 @Service
 public class CalendarReader {
 
-    public CalendarData parseCalendar(String calendarString) throws IOException, ParserException {
-        CalendarBuilder calendarBuilder = new CalendarBuilder();
-        Calendar calendar = calendarBuilder.build(new StringReader(calendarString));
+    /**
+     * Reads the feed and generates {@link CalendarEvents}.
+     * @param calendarBody feed to parse
+     * @return events in provided feed
+     */
+    public @Nonnull CalendarEvents readCalendar(String calendarBody) {
+        try {
+            CalendarBuilder calendarBuilder = new CalendarBuilder();
+            Calendar iCalendar = calendarBuilder.build(new StringReader(calendarBody));
 
-        ComponentList<VEvent> events = calendar.getComponents(Component.VEVENT);
-        CalendarData calendarData = new CalendarData();
-        for (VEvent vEvent : events) {
-            Date startDate = vEvent.getStartDate().getDate();
+            ComponentList<VEvent> iCalEvents = iCalendar.getComponents(Component.VEVENT);
+            List<CalendarEvent> calendarEvents = new ArrayList<>();
+            for (VEvent iCalEvent : iCalEvents) {
+                Date startDate = iCalEvent.getStartDate().getDate();
 
-            DtEnd dtEndDate = vEvent.getEndDate();
-            Date endDate = (dtEndDate == null) ? startDate : dtEndDate.getDate();
+                DtEnd dtEndDate = iCalEvent.getEndDate();
+                Date endDate = (dtEndDate == null) ? startDate : dtEndDate.getDate();
 
-            calendarData.addEvent(CalendarEvent.builder()
-                    .summary(vEvent.getSummary().getValue())
-                    .description(vEvent.getDescription().getValue())
-                    .uuid(vEvent.getUid().getValue())
-                    .startTime(new java.util.Date(startDate.getTime()))
-                    .endTime(new java.util.Date(endDate.getTime()))
-                    .allDayEvent(!(startDate instanceof DateTime))
-                    .build());
+                calendarEvents.add(CalendarEvent.builder()
+                        .summary(iCalEvent.getSummary().getValue())
+                        .description(iCalEvent.getDescription().getValue())
+                        .uuid(iCalEvent.getUid().getValue())
+                        .startTime(new java.util.Date(startDate.getTime()))
+                        .endTime(new java.util.Date(endDate.getTime()))
+                        .allDayEvent(!(startDate instanceof DateTime))
+                        .build());
+            }
+
+            return new CalendarEvents(calendarEvents);
         }
-
-        return calendarData;
+        catch (IOException | ParserException e) {
+            throw new CalendarSynchronizationException(e);
+        }
     }
 
 }
