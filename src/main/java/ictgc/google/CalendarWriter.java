@@ -145,6 +145,8 @@ public class CalendarWriter {
         List<Event> events = eventsService.list(googleCalendarId)
                 .setMaxResults(2500)
                 .setShowDeleted(Boolean.FALSE)
+                .setSingleEvents(Boolean.TRUE)
+                .setPageToken(null)
                 .execute()
                 .getItems();
 
