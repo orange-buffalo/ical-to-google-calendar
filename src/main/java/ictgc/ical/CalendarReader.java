@@ -1,23 +1,28 @@
 package ictgc.ical;
 
-import ictgc.domain.CalendarEvent;
-import ictgc.domain.CalendarEvents;
-import ictgc.domain.CalendarSynchronizationException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
+
+import ictgc.domain.CalendarEvent;
+import ictgc.domain.CalendarEvents;
+import ictgc.domain.CalendarSynchronizationException;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.Component;
 import net.fortuna.ical4j.model.ComponentList;
-import net.fortuna.ical4j.model.Date;
 import net.fortuna.ical4j.model.DateTime;
+import net.fortuna.ical4j.model.TimeZone;
 import net.fortuna.ical4j.model.component.VEvent;
+import net.fortuna.ical4j.model.property.DateProperty;
 import net.fortuna.ical4j.model.property.DtEnd;
+import net.fortuna.ical4j.model.property.DtStart;
 import org.springframework.stereotype.Service;
 
 /**
@@ -42,26 +47,30 @@ public class CalendarReader {
             ComponentList<VEvent> iCalEvents = iCalendar.getComponents(Component.VEVENT);
             List<CalendarEvent> calendarEvents = new ArrayList<>();
             for (VEvent iCalEvent : iCalEvents) {
-                Date startDate = iCalEvent.getStartDate().getDate();
-
+                DtStart dtStartDate = iCalEvent.getStartDate();
                 DtEnd dtEndDate = iCalEvent.getEndDate();
-                Date endDate = (dtEndDate == null) ? startDate : dtEndDate.getDate();
 
                 calendarEvents.add(CalendarEvent.builder()
                         .summary(iCalEvent.getSummary().getValue())
                         .description(iCalEvent.getDescription().getValue())
                         .uuid(iCalEvent.getUid().getValue())
-                        .startTime(new java.util.Date(startDate.getTime()))
-                        .endTime(new java.util.Date(endDate.getTime()))
-                        .allDayEvent(!(startDate instanceof DateTime))
+                        .startTime(datePropertyToZonedDateTime(dtStartDate))
+                        .endTime(datePropertyToZonedDateTime((dtEndDate == null) ? dtStartDate : dtEndDate))
+                        .allDayEvent(!(dtStartDate.getDate() instanceof DateTime))
                         .build());
             }
 
             return new CalendarEvents(calendarEvents);
-        }
-        catch (IOException | ParserException e) {
+        } catch (IOException | ParserException e) {
             throw new CalendarSynchronizationException(e);
         }
+    }
+
+    private ZonedDateTime datePropertyToZonedDateTime(DateProperty dateProperty) {
+        TimeZone timeZone = dateProperty.getTimeZone();
+        return ZonedDateTime.ofInstant(
+                dateProperty.getDate().toInstant(),
+                (timeZone == null) ? ZoneId.systemDefault() : timeZone.toZoneId());
     }
 
 }

@@ -1,7 +1,8 @@
 package ictgc.domain;
 
-import java.util.Date;
+import java.time.ZonedDateTime;
 import javax.annotation.Nonnull;
+
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -37,14 +38,14 @@ public class CalendarEvent {
      * Start time of this event.
      */
     @Nonnull
-    private Date startTime;
+    private ZonedDateTime startTime;
 
     /**
      * End time of this event. May be equal to {@link CalendarEvent#startTime}
      * if {@link CalendarEvent#allDayEvent} is {@code true}.
      */
     @Nonnull
-    private Date endTime;
+    private ZonedDateTime endTime;
 
     /**
      * Indicates if this event's {@link CalendarEvent#startTime} and {@link CalendarEvent#endTime}

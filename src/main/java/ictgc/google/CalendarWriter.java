@@ -1,5 +1,12 @@
 package ictgc.google;
 
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.annotation.Nonnull;
+
 import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.batch.BatchRequest;
 import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
@@ -13,11 +20,6 @@ import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import ictgc.domain.CalendarEvent;
 import ictgc.domain.CalendarEvents;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -65,15 +67,13 @@ public class CalendarWriter {
             createEvents(googleCalendarService, calendarEvents, googleCalendarId);
 
             log.info("all done");
-        }
-        catch (GoogleJsonResponseException jsonException) {
+        } catch (GoogleJsonResponseException jsonException) {
             GoogleJsonError jsonError = jsonException.getDetails();
             if (requiresCredentialsReset(jsonError)) {
                 resetCredentials(userId);
             }
             throw jsonException;
-        }
-        catch (TokenResponseException tokenException) {
+        } catch (TokenResponseException tokenException) {
             resetCredentials(userId);
             throw tokenException;
         }
@@ -114,20 +114,11 @@ public class CalendarWriter {
                     .setDescription(calendarEvent.getDescription())
                     .setExtendedProperties(extendedProperties);
 
-            if (calendarEvent.isAllDayEvent()) {
-                googleCalendarEvent
-                        .setStart(new EventDateTime().setDate(
-                                new DateTime(true, calendarEvent.getStartTime().getTime(), null)))
-                        .setEnd(new EventDateTime().setDate(
-                                new DateTime(true, calendarEvent.getEndTime().getTime(), null)));
-            }
-            else {
-                googleCalendarEvent
-                        .setStart(new EventDateTime().setDateTime(
-                                new DateTime(false, calendarEvent.getStartTime().getTime(), null)))
-                        .setEnd(new EventDateTime().setDateTime(
-                                new DateTime(false, calendarEvent.getEndTime().getTime(), null)));
-            }
+            googleCalendarEvent
+                    .setStart(zonedDateTimeToGoogleDateTime(
+                            calendarEvent.getStartTime(), calendarEvent.isAllDayEvent()))
+                    .setEnd(zonedDateTimeToGoogleDateTime(
+                            calendarEvent.getEndTime(), calendarEvent.isAllDayEvent()));
 
             eventsService.insert(googleCalendarId, googleCalendarEvent)
                     .queue(googleBatchRequest, callback);
@@ -136,6 +127,14 @@ public class CalendarWriter {
         googleBatchRequest.execute();
 
         log.info("inserted");
+    }
+
+    private EventDateTime zonedDateTimeToGoogleDateTime(ZonedDateTime zonedDateTime, boolean dateOnly) {
+        return new EventDateTime().setDate(new DateTime(
+                dateOnly,
+                zonedDateTime.toEpochSecond() * 1000,
+                zonedDateTime.getOffset().getTotalSeconds() / 60)
+        );
     }
 
     private void deleteExistingEvents(Calendar googleCalendarService, String googleCalendarId) throws IOException {
