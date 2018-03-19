@@ -1,11 +1,13 @@
 package ictgc;
 
-import ictgc.domain.CalendarSynchronizationException;
-import ictgc.google.CalendarWriter;
-import ictgc.ical.CalendarReader;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import ictgc.domain.CalendarSynchronizationException;
+import ictgc.google.CalendarWriter;
+import ictgc.ical.CalendarReader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,7 +28,9 @@ public class CalendarsSynchronizer {
     @Autowired
     public CalendarsSynchronizer(
             @Qualifier("userFlowExecutor") TaskExecutor taskExecutor,
-            ApplicationProperties config, CalendarReader calendarReader, CalendarWriter calendarWriter) {
+            ApplicationProperties config,
+            CalendarReader calendarReader,
+            CalendarWriter calendarWriter) {
 
         this.taskExecutor = taskExecutor;
         this.userFlows = getUserFlows(config, calendarReader, calendarWriter);
@@ -47,21 +51,28 @@ public class CalendarsSynchronizer {
     }
 
     private Collection<UserFlow> getUserFlows(
-            ApplicationProperties config, CalendarReader calendarReader, CalendarWriter calendarWriter) {
+            ApplicationProperties config,
+            CalendarReader calendarReader,
+            CalendarWriter calendarWriter) {
 
         Map<String, UserFlow> userFlowsMap = new HashMap<>();
         for (ApplicationProperties.Flow configFlow : config.getFlows()) {
             UserFlow userFlow = userFlowsMap.computeIfAbsent(
                     configFlow.getUserId(),
                     userId -> createUserFlowByUserId(userId, config, calendarReader, calendarWriter));
+            ZoneId defaultTimeZone = (configFlow.getDefaultICalTimeZone() == null)
+                    ? ZoneId.systemDefault() : ZoneId.of(configFlow.getDefaultICalTimeZone());
             userFlow.addCalendarFlow(
-                    new CalendarFlow(configFlow.getICalUrl(), configFlow.getGoogleCalendarName()));
+                    new CalendarFlow(configFlow.getICalUrl(), configFlow.getGoogleCalendarName(), defaultTimeZone));
         }
         return userFlowsMap.values();
     }
 
     private UserFlow createUserFlowByUserId(
-            String userId, ApplicationProperties config, CalendarReader calendarReader, CalendarWriter calendarWriter) {
+            String userId,
+            ApplicationProperties config,
+            CalendarReader calendarReader,
+            CalendarWriter calendarWriter) {
 
         ApplicationProperties.User configUser = config.getUsers().stream()
                 .filter(user -> user.getId().equals(userId))

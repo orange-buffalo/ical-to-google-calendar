@@ -1,8 +1,5 @@
 package ictgc;
 
-import ictgc.domain.CalendarEvents;
-import ictgc.google.CalendarWriter;
-import ictgc.ical.CalendarReader;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -10,8 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.Nonnull;
+
+import ictgc.domain.CalendarEvents;
+import ictgc.google.CalendarWriter;
+import ictgc.ical.CalendarReader;
 import lombok.extern.slf4j.Slf4j;
-import net.fortuna.ical4j.data.ParserException;
 import org.apache.commons.io.IOUtils;
 
 /**
@@ -27,8 +27,11 @@ class UserFlow {
     private final CalendarWriter calendarWriter;
     private final ReentrantLock lock = new ReentrantLock();
 
-    public UserFlow(@Nonnull String userId, @Nonnull String userEmail,
-                    @Nonnull CalendarReader calendarReader, @Nonnull CalendarWriter calendarWriter) {
+    public UserFlow(@Nonnull String userId,
+                    @Nonnull String userEmail,
+                    @Nonnull CalendarReader calendarReader,
+                    @Nonnull CalendarWriter calendarWriter) {
+
         this.userId = userId;
         this.userEmail = userEmail;
         this.calendarReader = calendarReader;
@@ -60,12 +63,10 @@ class UserFlow {
                         calendarFlow.setPreviousData(calendarEvents);
 
                         log.info("{} is synchronized", calendarFlow);
-                    }
-                    else {
+                    } else {
                         log.trace("no changes in feed, skipping synchronization");
                     }
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     calendarFlow.setPreviousData(null);
 
                     log.error("exception while processing calendar flow " + calendarFlow, e);
@@ -73,8 +74,7 @@ class UserFlow {
             }
 
             log.trace("done, {} is processed", userId);
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
@@ -86,7 +86,7 @@ class UserFlow {
         this.calendarFlows.add(calendarFlow);
     }
 
-    private CalendarEvents readICalendar(CalendarFlow calendarFlow) throws IOException, ParserException {
+    private CalendarEvents readICalendar(CalendarFlow calendarFlow) throws IOException {
         String iCalUrl = calendarFlow.getICalUrl();
         log.trace("reading calendar feed: {}", iCalUrl);
 
@@ -94,7 +94,7 @@ class UserFlow {
 
         log.trace("feed retrieved");
 
-        CalendarEvents currentData = calendarReader.readCalendar(currentCalendarFeedContent);
+        CalendarEvents currentData = calendarReader.readCalendar(currentCalendarFeedContent, calendarFlow.getDefaultTimeZone());
 
         log.trace("feed parsed");
 

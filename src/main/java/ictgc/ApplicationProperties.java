@@ -37,6 +37,7 @@ public class ApplicationProperties {
         private String userId;
         private String iCalUrl;
         private String googleCalendarName;
+        private String defaultICalTimeZone;
     }
 
     @Getter

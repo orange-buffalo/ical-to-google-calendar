@@ -39,7 +39,7 @@ public class CalendarReader {
      * @return events in provided feed
      */
     @Nonnull
-    public CalendarEvents readCalendar(String calendarBody) {
+    public CalendarEvents readCalendar(String calendarBody, ZoneId defaultTimeZone) {
         try {
             CalendarBuilder calendarBuilder = new CalendarBuilder();
             Calendar iCalendar = calendarBuilder.build(new StringReader(calendarBody));
@@ -54,8 +54,8 @@ public class CalendarReader {
                         .summary(iCalEvent.getSummary().getValue())
                         .description(iCalEvent.getDescription().getValue())
                         .uuid(iCalEvent.getUid().getValue())
-                        .startTime(datePropertyToZonedDateTime(dtStartDate))
-                        .endTime(datePropertyToZonedDateTime((dtEndDate == null) ? dtStartDate : dtEndDate))
+                        .startTime(datePropertyToZonedDateTime(dtStartDate, defaultTimeZone))
+                        .endTime(datePropertyToZonedDateTime((dtEndDate == null) ? dtStartDate : dtEndDate, defaultTimeZone))
                         .allDayEvent(!(dtStartDate.getDate() instanceof DateTime))
                         .build());
             }
@@ -66,11 +66,14 @@ public class CalendarReader {
         }
     }
 
-    private ZonedDateTime datePropertyToZonedDateTime(DateProperty dateProperty) {
+    private ZonedDateTime datePropertyToZonedDateTime(
+            DateProperty dateProperty,
+            ZoneId defaultTimeZone) {
+
         TimeZone timeZone = dateProperty.getTimeZone();
         return ZonedDateTime.ofInstant(
                 dateProperty.getDate().toInstant(),
-                (timeZone == null) ? ZoneId.systemDefault() : timeZone.toZoneId());
+                (timeZone == null) ? defaultTimeZone : timeZone.toZoneId());
     }
 
 }

@@ -6,6 +6,7 @@ ical-to-google-calendar:
 #    - user-id: "user-id"
 #      i-cal-url: "url-to-feed"
 #      google-calendar-name: "google-calendar-name"
+#      default-i-cal-time-zone: "Australia/Melbourne"
   authorization-server:
     port: "9889"
     host: "localhost"
