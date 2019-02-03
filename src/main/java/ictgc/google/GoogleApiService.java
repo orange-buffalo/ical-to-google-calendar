@@ -15,6 +15,18 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.calendar.CalendarScopes;
 import ictgc.ApplicationProperties;
 import ictgc.domain.CalendarSynchronizationException;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+import org.mortbay.jetty.Request;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.handler.AbstractHandler;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Nonnull;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
@@ -29,17 +41,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.annotation.Nonnull;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
-import org.mortbay.jetty.Request;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.handler.AbstractHandler;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 /**
  * Encapsulates required logic to obtain authorized Google Calendar APi Service.
@@ -78,17 +79,15 @@ public class GoogleApiService {
         this.authorizationFlow = createAuthorizationFlow(config);
 
         ApplicationProperties.AuthorizationServer authorizationServerConfig = config.getAuthorizationServer();
-        String host = authorizationServerConfig.getHost();
-        int port = authorizationServerConfig.getPort();
+        int port = authorizationServerConfig.getListeningPort();
 
-        this.authorizationRedirectUrl = "http://" + host + ":" + port + CALLBACK_PATH;
+        this.authorizationRedirectUrl = authorizationServerConfig.getAuthorizationRedirectUrlBase() + CALLBACK_PATH;
 
         Server server = new Server(port);
         server.addHandler(new CallbackHandler());
         try {
             server.start();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new IllegalStateException(e);
         }
     }
@@ -134,8 +133,7 @@ public class GoogleApiService {
     public void resetCredentials(String userId) {
         try {
             credentialDataStore.delete(userId);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -183,8 +181,7 @@ public class GoogleApiService {
                     .execute();
 
             return authorizationFlow.createAndStoreCredential(tokenResponse, userId);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new CalendarSynchronizationException(e);
         }
     }
@@ -248,8 +245,7 @@ public class GoogleApiService {
                 while (code == null && error == null) {
                     gotAuthorizationResponse.awaitUninterruptibly();
                 }
-            }
-            finally {
+            } finally {
                 lock.unlock();
             }
         }
@@ -264,8 +260,7 @@ public class GoogleApiService {
                 this.error = error;
 
                 gotAuthorizationResponse.signal();
-            }
-            finally {
+            } finally {
                 lock.unlock();
             }
         }

@@ -81,6 +81,7 @@ task dockerBuildImage(type: DockerBuildImage) {
 task dockerPushImage(type: DockerPushImage) {
     imageName = 'orangebuffalo/ical-to-google-calendar'
     tag = 'latest'
+    dependsOn dockerBuildImage
 }
 
 compileJava.dependsOn(processResources)

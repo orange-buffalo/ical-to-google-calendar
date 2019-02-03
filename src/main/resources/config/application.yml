@@ -8,8 +8,8 @@ ical-to-google-calendar:
 #      google-calendar-name: "google-calendar-name"
 #      default-i-cal-time-zone: "Australia/Melbourne"
   authorization-server:
-    port: "9889"
-    host: "localhost"
+    listening-port: "9889"
+    authorization-redirect-url-base: "http://localhost:9889"
   synchronization-schedule-delay: "300000"
   authorization-storage-directory: "/data/storage"
   google-client-secrets-file: "/data/config/client-secret.json"

@@ -1,12 +1,13 @@
 package ictgc;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 @ConfigurationProperties("ical-to-google-calendar")
 @Component
@@ -43,7 +44,7 @@ public class ApplicationProperties {
     @Getter
     @Setter
     public static class AuthorizationServer {
-        private int port;
-        private String host;
+        private int listeningPort;
+        private String authorizationRedirectUrlBase;
     }
 }
