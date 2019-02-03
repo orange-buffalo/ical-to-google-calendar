@@ -41,7 +41,6 @@ before TLS termination (defaults `http://localhost:<port>`).
 either provide a volume with the config file and Google credentials, or mount a host folder containing the same.
 2. Below is the default config, extend it with the user and flow configuration, 
 and re-write the files location if desired.
-Define the directory where user credentials will be saved by Google API (default `~/.ical-to-google-calendar/storage`)
     ```yaml
     ical-to-google-calendar:
     #  users:
