@@ -1,40 +1,32 @@
 buildscript {
     ext {
-        springBootVersion = "1.5.1.RELEASE"
-        ical4jVersion = "2.0.0"
-        commonsIoVersion = "2.5"
-        lombokVersion = "1.16.14"
-        jsr305Version = "3.0.1"
+        ical4jVersion = "3.0.6"
+        commonsIoVersion = "2.6"
+        lombokVersion = "1.18.4"
+        jsr305Version = "3.0.2"
         junitVersion = "4.12"
-        googleApiVersion = "1.22.0"
-        googleCanedarApiVersion = "v3-rev236-1.22.0"
-        
-        propDepsPluginversion = "0.0.7"
-    }
-    repositories {
-        mavenCentral()
-        maven { url "http://repo.spring.io/plugins-release" }
-    }
-    dependencies {
-        classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
-        classpath "org.springframework.build.gradle:propdeps-plugin:$propDepsPluginversion"
+        googleApiVersion = "1.28.0"
+        googleCanedarApiVersion = "v3-rev364-1.25.0"
     }
 }
 
-apply plugin: "org.springframework.boot"
-apply plugin: "propdeps"
-apply plugin: "propdeps-idea"
-
-jar {
-    baseName = "ical-to-google-calendar"
-    version = "0.0.1-SNAPSHOT"
-    archiveName = "${baseName}.${extension}"
+plugins {
+    id 'org.springframework.boot' version '2.1.2.RELEASE'
 }
+
+apply plugin: 'java'
+apply plugin: 'io.spring.dependency-management'
 
 sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+}
+
+jar {
+    archiveBaseName= "ical-to-google-calendar"
+    version = "0.0.1-SNAPSHOT"
+    archiveFileName = "${archiveBaseName}.${archiveExtension}"
 }
 
 dependencies {
@@ -43,23 +35,18 @@ dependencies {
 
     compile "org.mnode.ical4j:ical4j:$ical4jVersion"
     compile "commons-io:commons-io:$commonsIoVersion"
-    compile "org.projectlombok:lombok:$lombokVersion"
 
     compile "com.google.api-client:google-api-client:$googleApiVersion"
     compile "com.google.oauth-client:google-oauth-client-jetty:$googleApiVersion"
     compile "com.google.apis:google-api-services-calendar:$googleCanedarApiVersion"
-    
-    optional "com.google.code.findbugs:jsr305:$jsr305Version"
-    optional "org.springframework.boot:spring-boot-configuration-processor"
+
+    compileOnly "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    compileOnly "com.google.code.findbugs:jsr305:$jsr305Version"
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
 
     testCompile "org.springframework.boot:spring-boot-starter-test"
     testCompile "junit:junit:$junitVersion"
-}
-
-task wrapper(type: Wrapper) {
-    // upgrade to >=3.4 is blocked by IDEA bug https://github.com/gradle/gradle/issues/1276,
-    // fixed ether in IDEA 2016.3.6 ot IDEA 2017.1
-    gradleVersion = "3.3"
 }
 
 compileJava.dependsOn(processResources)
