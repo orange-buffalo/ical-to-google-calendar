@@ -12,7 +12,10 @@ buildscript {
 
 plugins {
     id 'org.springframework.boot' version '2.1.2.RELEASE'
+    id 'com.bmuschko.docker-remote-api' version '4.4.0'
 }
+
+import com.bmuschko.gradle.docker.tasks.image.*
 
 apply plugin: 'java'
 apply plugin: 'io.spring.dependency-management'
@@ -21,12 +24,7 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
-}
-
-jar {
-    archiveBaseName= "ical-to-google-calendar"
-    version = "0.0.1-SNAPSHOT"
-    archiveFileName = "${archiveBaseName}.${archiveExtension}"
+    jcenter()
 }
 
 dependencies {
@@ -47,6 +45,42 @@ dependencies {
 
     testCompile "org.springframework.boot:spring-boot-starter-test"
     testCompile "junit:junit:$junitVersion"
+}
+
+jar {
+    archiveBaseName = "ical-to-google-calendar"
+    version = "0.0.1-SNAPSHOT"
+    archiveFileName = "${archiveBaseName}.${archiveExtension}"
+}
+
+docker {
+    registryCredentials {
+        username = project.properties['docker.hub.username']
+        password = project.properties['docker.hub.password']
+    }
+}
+
+task dockerSyncJar(type: Sync) {
+    from bootJar
+    into "${buildDir}/docker-build"
+    rename(".*\\.jar", "app.jar")
+}
+
+task dockerCopyDockerFile(type: Copy) {
+    from "${projectDir}/src/main/docker"
+    into "${buildDir}/docker-build"
+    dependsOn dockerSyncJar
+}
+
+task dockerBuildImage(type: DockerBuildImage) {
+    inputDir = file("${buildDir}/docker-build")
+    tags.add("orangebuffalo/ical-to-google-calendar:latest")
+    dependsOn dockerCopyDockerFile
+}
+
+task dockerPushImage(type: DockerPushImage) {
+    imageName = 'orangebuffalo/ical-to-google-calendar'
+    tag = 'latest'
 }
 
 compileJava.dependsOn(processResources)

@@ -11,5 +11,5 @@ ical-to-google-calendar:
     port: "9889"
     host: "localhost"
   synchronization-schedule-delay: "300000"
-  google-client-secrets-file: "~/.ical-to-google-calendar/client_secret.json"
-  authorization-storage-directory: "~/.ical-to-google-calendar/storage"
+  authorization-storage-directory: "/data/storage"
+  google-client-secrets-file: "/data/config/client-secret.json"
