@@ -35,11 +35,6 @@ before TLS termination (defaults `http://localhost:<port>`).
 3. Setup `Authorized redirect URIs` for created credentials: set it to `<authorization-redirect-url-base>/google-calendar-auth-callback`.
 4. Download `client_secret.json`.
 
-## Prepare binaries
-
-1. Clone the repo.
-2. Run `./gradlew dockerBuildImage`.
-
 ## Prepare files
 
 1. Application will look for a Spring Boot config file in the `/data/config` directory. When running the image, 
