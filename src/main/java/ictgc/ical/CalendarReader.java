@@ -1,29 +1,25 @@
 package ictgc.ical;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import javax.annotation.Nonnull;
-
 import ictgc.domain.CalendarEvent;
 import ictgc.domain.CalendarEvents;
 import ictgc.domain.CalendarSynchronizationException;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.ParserException;
-import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.Component;
-import net.fortuna.ical4j.model.ComponentList;
-import net.fortuna.ical4j.model.DateTime;
-import net.fortuna.ical4j.model.TimeZone;
+import net.fortuna.ical4j.model.*;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.property.DateProperty;
 import net.fortuna.ical4j.model.property.DtEnd;
 import net.fortuna.ical4j.model.property.DtStart;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.io.StringReader;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Reads the iCalendar feed and produces {@link CalendarEvents}.
@@ -48,7 +44,7 @@ public class CalendarReader {
             List<CalendarEvent> calendarEvents = new ArrayList<>();
             for (VEvent iCalEvent : iCalEvents) {
                 DtStart dtStartDate = iCalEvent.getStartDate();
-                DtEnd dtEndDate = iCalEvent.getEndDate();
+                DtEnd dtEndDate = iCalEvent.getEndDate(false);
 
                 calendarEvents.add(CalendarEvent.builder()
                         .summary(iCalEvent.getSummary().getValue())

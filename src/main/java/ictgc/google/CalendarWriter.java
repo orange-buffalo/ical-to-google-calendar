@@ -1,12 +1,5 @@
 package ictgc.google;
 
-import java.io.IOException;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import javax.annotation.Nonnull;
-
 import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.batch.BatchRequest;
 import com.google.api.client.googleapis.batch.json.JsonBatchCallback;
@@ -23,6 +16,13 @@ import ictgc.domain.CalendarEvents;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Writes {@link CalendarEvents} to Google Calendar.
@@ -130,11 +130,11 @@ public class CalendarWriter {
     }
 
     private EventDateTime zonedDateTimeToGoogleDateTime(ZonedDateTime zonedDateTime, boolean dateOnly) {
-        return new EventDateTime().setDate(new DateTime(
-                dateOnly,
+        DateTime googleDateTime = new DateTime(
+                false,
                 zonedDateTime.toEpochSecond() * 1000,
-                zonedDateTime.getOffset().getTotalSeconds() / 60)
-        );
+                zonedDateTime.getOffset().getTotalSeconds() / 60);
+        return new EventDateTime().setDate(dateOnly ? googleDateTime : googleDateTime);
     }
 
     private void deleteExistingEvents(Calendar googleCalendarService, String googleCalendarId) throws IOException {
