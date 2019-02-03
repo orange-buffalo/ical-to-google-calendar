@@ -131,10 +131,16 @@ public class CalendarWriter {
 
     private EventDateTime zonedDateTimeToGoogleDateTime(ZonedDateTime zonedDateTime, boolean dateOnly) {
         DateTime googleDateTime = new DateTime(
-                false,
+                dateOnly,
                 zonedDateTime.toEpochSecond() * 1000,
                 zonedDateTime.getOffset().getTotalSeconds() / 60);
-        return new EventDateTime().setDate(dateOnly ? googleDateTime : googleDateTime);
+        EventDateTime eventDateTime = new EventDateTime();
+        if (dateOnly) {
+            eventDateTime.setDate(googleDateTime);
+        } else {
+            eventDateTime.setDateTime(googleDateTime);
+        }
+        return eventDateTime;
     }
 
     private void deleteExistingEvents(Calendar googleCalendarService, String googleCalendarId) throws IOException {
