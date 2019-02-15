@@ -33,6 +33,7 @@ dependencies {
 
     compile "org.mnode.ical4j:ical4j:$ical4jVersion"
     compile "commons-io:commons-io:$commonsIoVersion"
+    compile "javax.validation:validation-api:2.0.1.Final"
 
     compile "com.google.api-client:google-api-client:$googleApiVersion"
     compile "com.google.oauth-client:google-oauth-client-jetty:$googleApiVersion"
@@ -42,6 +43,8 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
     compileOnly "com.google.code.findbugs:jsr305:$jsr305Version"
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+    
+    runtime "org.hibernate.validator:hibernate-validator"
 
     testCompile "org.springframework.boot:spring-boot-starter-test"
     testCompile "junit:junit:$junitVersion"
