@@ -1,11 +1,11 @@
 package ictgc.domain;
 
-import java.time.ZonedDateTime;
-import javax.annotation.Nonnull;
-
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+
+import javax.annotation.Nonnull;
+import java.time.ZonedDateTime;
 
 /**
  * An event abstraction used by application.

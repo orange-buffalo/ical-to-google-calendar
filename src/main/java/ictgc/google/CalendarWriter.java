@@ -116,9 +116,15 @@ public class CalendarWriter {
 
             googleCalendarEvent
                     .setStart(zonedDateTimeToGoogleDateTime(
-                            calendarEvent.getStartTime(), calendarEvent.isAllDayEvent()))
-                    .setEnd(zonedDateTimeToGoogleDateTime(
-                            calendarEvent.getEndTime(), calendarEvent.isAllDayEvent()));
+                            calendarEvent.getStartTime(), calendarEvent.isAllDayEvent()));
+
+            if (calendarEvent.isAllDayEvent()) {
+                googleCalendarEvent.setEnd(
+                        zonedDateTimeToGoogleDateTime(calendarEvent.getStartTime().plusSeconds(86400), true));
+            } else {
+                googleCalendarEvent.setEnd(
+                        zonedDateTimeToGoogleDateTime(calendarEvent.getEndTime(), calendarEvent.isAllDayEvent()));
+            }
 
             eventsService.insert(googleCalendarId, googleCalendarEvent)
                     .queue(googleBatchRequest, callback);
